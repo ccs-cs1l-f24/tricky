@@ -1,0 +1,12 @@
+[versions]
+compose = "1.7.3"
+kotlin = "2.1.0"
+ktor = "3.0.3"
+
+[libraries]
+ktor-logging = { group = "io.ktor", name = "ktor-server-call-logging", version.ref = "ktor" }
+ktor-server = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+
+[plugins]
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
