@@ -33,17 +33,6 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalUuidApi::class)
 fun main(): Unit = runBlocking {
     val actionFlow = MutableSharedFlow<Action>()
-    launch {
-        actionFlow.collect {
-            if (it is Action.PlayerEntry) {
-                File(File("serverData/${it.gameId}").also { d -> d.mkdirs() }, "players.json").let { file ->
-                    val players = Json.decodeFromString<GamePlayers>(file.readText())
-                    val added = players.copy(owner = players.owner, players = players.players + it.uid)
-                    file.writeText(Json.encodeToString(added))
-                }
-            }
-        }
-    }
     embeddedServer(Netty, 8080) {
         install(CallLogging) { level = Level.INFO }
         install(WebSockets) { contentConverter = KotlinxWebsocketSerializationConverter(Json) }
@@ -78,15 +67,24 @@ fun main(): Unit = runBlocking {
                         actionFlow.emit(Action.ChatMessage(gameId = gameId, uid = enterRequest.uid, message = message))
                     }
                 }
-                scope.launch {
-                    actionFlow.collect {
-                        if (it is Action.ChatMessage && it.gameId == gameId) {
-                            sendSerialized(ChatMessage(uid = it.uid, message = it.message))
-                        }
+                actionFlow.collect {
+                    if (it is Action.ChatMessage && it.gameId == gameId) {
+                        sendSerialized(ChatMessage(uid = it.uid, message = it.message))
                     }
                 }
             }
             staticFiles("/", File("clientAssets"))
         }
-    }.start(wait = true)
+    }.start(wait = false)
+    launch {
+        actionFlow.collect {
+            if (it is Action.PlayerEntry) {
+                File(File("serverData/${it.gameId}").also { d -> d.mkdirs() }, "players.json").let { file ->
+                    val players = Json.decodeFromString<GamePlayers>(file.readText())
+                    val added = players.copy(owner = players.owner, players = players.players + it.uid)
+                    file.writeText(Json.encodeToString(added))
+                }
+            }
+        }
+    }
 }

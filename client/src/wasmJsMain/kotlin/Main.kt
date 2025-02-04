@@ -1,20 +1,27 @@
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.CanvasBasedWindow
 import io.ktor.client.*
@@ -29,11 +36,14 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import model.ChatMessage
+import model.ChatMessageRequest
 import model.CreateGameRequest
 import model.CreateGameResponse
+import model.EnterGameRequest
 import org.w3c.dom.events.Event
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -45,6 +55,7 @@ fun main() {
         install(WebSockets) { contentConverter = KotlinxWebsocketSerializationConverter(Json) }
     }
     CanvasBasedWindow(canvasElementId = "app") {
+        val coroutineScope = rememberCoroutineScope()
         var uid: String? by remember { mutableStateOf(null) }
         var currentPage: Page? by remember { mutableStateOf(null) }
         val router = object : Router {
@@ -89,7 +100,7 @@ fun main() {
                         null -> {}
                         Page.Home -> {
                             Button(onClick = {
-                                GlobalScope.launch {
+                                coroutineScope.launch {
                                     uid?.let {
                                         val response = httpClient.post("/create-game") {
                                             contentType(ContentType.Application.Json)
@@ -104,9 +115,40 @@ fun main() {
                         }
 
                         is Page.Game -> {
-                            Column(modifier = Modifier.padding(24.dp)) {
+                            val inputFlow = remember { MutableSharedFlow<String>() }
+                            val allMessages = remember { mutableStateListOf<ChatMessage>() }
+                            LaunchedEffect(uid) {
+                                uid?.let {
+                                    httpClient.webSocket(path = "/game/${page.id}") {
+                                        sendSerialized(EnterGameRequest(uid = it))
+                                        launch {
+                                            inputFlow.collect { message ->
+                                                sendSerialized(ChatMessageRequest(message))
+                                            }
+                                        }
+                                        while (true) allMessages.add(receiveDeserialized<ChatMessage>())
+                                    }
+                                }
+                            }
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.padding(24.dp)
+                            ) {
                                 Text("Game: ${page.id}")
                                 Text("User: $uid")
+                                var text by remember { mutableStateOf("") }
+                                OutlinedTextField(text, { text = it }, label = { Text("Chat") }, trailingIcon = {
+                                    TextButton(onClick = {
+                                        coroutineScope.launch {
+                                            inputFlow.emit(text)
+                                            text = ""
+                                        }
+                                    }, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
+                                        Text("Send")
+                                    }
+                                })
+                                allMessages.forEach {
+                                    Text("${it.uid}: ${it.message}")
+                                }
                             }
                         }
                     }
