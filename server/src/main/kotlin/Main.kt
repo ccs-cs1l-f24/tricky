@@ -12,6 +12,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -60,11 +61,18 @@ fun main(): Unit = runBlocking {
                 )
                 val enterRequest = receiveDeserialized<EnterGameRequest>()
                 actionFlow.emit(Action.PlayerEntry(gameId = gameId, uid = enterRequest.uid))
-                val scope = CoroutineScope(coroutineContext)
-                scope.launch {
-                    while (true) {
-                        val message = receiveDeserialized<ChatMessageRequest>().message
-                        actionFlow.emit(Action.ChatMessage(gameId = gameId, uid = enterRequest.uid, message = message))
+                CoroutineScope(coroutineContext).launch {
+                    try {
+                        while (true) {
+                            val message = receiveDeserialized<ChatMessageRequest>().message
+                            actionFlow.emit(
+                                Action.ChatMessage(
+                                    gameId = gameId, uid = enterRequest.uid, message = message
+                                )
+                            )
+                        }
+                    } catch (e: ClosedReceiveChannelException) {
+                        return@launch
                     }
                 }
                 actionFlow.collect {
