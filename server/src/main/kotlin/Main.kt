@@ -81,7 +81,7 @@ fun main(): Unit = runBlocking {
             if (it is Action.PlayerEntry) {
                 File(File("serverData/${it.gameId}").also { d -> d.mkdirs() }, "players.json").let { file ->
                     val players = Json.decodeFromString<GamePlayers>(file.readText())
-                    val added = players.copy(owner = players.owner, players = players.players + it.uid)
+                    val added = players.copy(owner = players.owner, players = (players.players + it.uid).distinct())
                     file.writeText(Json.encodeToString(added))
                 }
             }
