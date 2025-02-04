@@ -354,4 +354,6 @@ gradle-app.setting
 
 .idea/*
 !.idea/runConfigurations
-clientAssets
+/dev/
+!/server/
+.kotlin

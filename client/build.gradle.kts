@@ -4,6 +4,7 @@ plugins {
     kotlin("multiplatform")
     alias(libs.plugins.compose)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -17,9 +18,14 @@ kotlin {
         binaries.executable()
     }
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
+                implementation(project(":common"))
                 implementation(compose.material3)
+                implementation(libs.ktor.websockets.client)
+                implementation(libs.ktor.content.negotiation.client)
+                implementation(libs.ktor.serialization)
+                implementation(libs.ktor.js.client)
             }
         }
     }

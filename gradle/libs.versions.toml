@@ -2,10 +2,18 @@
 compose = "1.7.3"
 kotlin = "2.1.0"
 ktor = "3.0.3"
+logback = "1.5.16"
 
 [libraries]
+ktor-content-negotiation-client = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-content-negotiation-server = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-js-client = { group = "io.ktor", name = "ktor-client-js", version.ref = "ktor" }
 ktor-logging = { group = "io.ktor", name = "ktor-server-call-logging", version.ref = "ktor" }
+ktor-serialization = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+ktor-websockets-client = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
+ktor-websockets-server = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
+logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 
 [plugins]
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

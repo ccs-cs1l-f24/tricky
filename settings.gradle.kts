@@ -19,4 +19,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "tricky"
 
-include(":client", ":server")
+include(":client", ":server", ":common")

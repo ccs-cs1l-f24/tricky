@@ -2,6 +2,7 @@
   <configuration default="false" name="Server" type="KtorApplicationConfigurationType" factoryName="Ktor">
     <option name="MAIN_CLASS_NAME" value="MainKt" />
     <module name="tricky.server.main" />
+    <option name="WORKING_DIRECTORY" value="$ProjectFileDir$/dev" />
     <option name="alternativeJrePath" />
     <option name="alternativeJrePathEnabled" value="false" />
     <option name="includeProvidedScope" value="false" />
@@ -10,7 +11,7 @@
     <option name="programParameters" value="" />
     <option name="shortenCommandLine" />
     <option name="vmParameters" />
-    <option name="workingDirectory" value="$PROJECT_DIR$" />
+    <option name="workingDirectory" value="$ProjectFileDir$/dev" />
     <method v="2">
       <option name="Make" enabled="true" />
       <option name="Gradle.BeforeRunTask" enabled="true" tasks="copyClientAssetsDev" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />

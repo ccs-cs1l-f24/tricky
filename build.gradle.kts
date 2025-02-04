@@ -1,12 +1,13 @@
 plugins {
     kotlin("jvm") version libs.versions.kotlin apply false
+    kotlin("plugin.serialization") version libs.versions.kotlin apply false
 }
 
 tasks.register("copyClientAssetsDev") {
     group = "custom"
     dependsOn(":client:wasmJsBrowserDevelopmentExecutableDistribution")
     val distDir = project("client").layout.buildDirectory.dir("dist/wasmJs/developmentExecutable")
-    val assetsDir = layout.projectDirectory.dir("clientAssets")
+    val assetsDir = layout.projectDirectory.dir("dev/clientAssets")
     inputs.dir(distDir)
     doLast {
         delete { delete(assetsDir) }
