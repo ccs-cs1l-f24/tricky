@@ -49,7 +49,7 @@ fun main(): Unit = runBlocking {
                 gamesFile.appendText(Json.encodeToString(GameListEntry(gameId = gameId)) + "\n")
                 val gameDir = File("serverData/$gameId").also { it.mkdirs() }
                 File(gameDir, "gameState.json").writeText(
-                    Json.encodeToString(ServerGameState.Waiting(players = emptyList()))
+                    Json.encodeToString(ServerGameState.Waiting(players = emptyList()) as ServerGameState)
                 )
                 call.respond(CreateGameResponse(gameId = gameId))
             }
