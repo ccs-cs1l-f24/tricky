@@ -17,11 +17,14 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
                     game = action.gameId, player = action.uid, eventBroadcast = Event.Broadcast.Error("internal error")
                 )
             )
+            val gameState: ServerGameState = Json.decodeFromString(gameStateFile.readText())
+            val newGameState: ServerGameState = if (gameState is ServerGameState.Waiting) gameState.copy(
+                players = (gameState.players + action.uid).toSet().toList()
+            ) else gameState
+            gameStateFile.writeText(Json.encodeToString(newGameState))
             emit(
                 Event(
-                    game = action.gameId,
-                    player = action.uid,
-                    eventBroadcast = Event.Broadcast.NewGameState(Json.decodeFromString(gameStateFile.readText()))
+                    game = action.gameId, eventBroadcast = Event.Broadcast.NewGameState(newGameState)
                 )
             )
         }
@@ -31,7 +34,7 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
             val gameState: ServerGameState =
                 if (gameStateFile.exists()) Json.decodeFromString(gameStateFile.readText()) else return
             if (gameState is ServerGameState.Waiting && action.uid in gameState.players) {
-                val newGameState = gameState.copy(players = gameState.players - action.uid)
+                val newGameState: ServerGameState = gameState.copy(players = gameState.players - action.uid)
                 gameStateFile.writeText(Json.encodeToString(newGameState))
                 emit(Event(game = action.gameId, eventBroadcast = Event.Broadcast.NewGameState(newGameState)))
             }
@@ -62,7 +65,7 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
             val hands = deck.shuffled().mapIndexed { index, card -> index to card }
                 .groupBy { (index, _) -> gameState.players[index % gameState.players.size] }
                 .mapValues { (_, values) -> values.map { it.second } }
-            val initialGameState = ServerGameState.Playing(
+            val initialGameState: ServerGameState = ServerGameState.Playing(
                 players = gameState.players,
                 turn = gameState.players.first(),
                 lastCard = null,
@@ -87,7 +90,7 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
             if (gameState.lastPlayer != action.uid && !(action.card beats gameState.lastCard)) return emitError("must beat previous card")
             if (gameState.hands.getOrElse(action.uid) { emptyList() }.minus(action.card).isEmpty()) {
                 if (gameState.hands.count { (player, hand) -> player != action.uid && hand.isNotEmpty() } <= 1) {
-                    val newGameState = ServerGameState.Finished(
+                    val newGameState: ServerGameState = ServerGameState.Finished(
                         rankings = (gameState.rankings + action.uid) + gameState.hands.entries.first { (player, hand) -> player != action.uid && hand.isNotEmpty() }.key
                     )
                     gameStateFile.writeText(Json.encodeToString(newGameState))
@@ -99,18 +102,19 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
             emit(
                 Event(
                     game = action.gameId, eventBroadcast = Event.Broadcast.NewGameState(
-                        gameState.copy(
+                        (gameState.copy(
                             turn = gameState.players.subList(
-                                gameState.players.indexOf(action.uid) + 1, gameState.players.size
-                            ).firstOrNull { player -> gameState.hands[player]?.isNotEmpty() == true }
-                                ?: gameState.players.first { player -> gameState.hands[player]?.isNotEmpty() == true },
+                            gameState.players.indexOf(action.uid) + 1, gameState.players.size
+                        ).firstOrNull { player -> gameState.hands[player]?.isNotEmpty() == true }
+                            ?: gameState.players.first { player -> gameState.hands[player]?.isNotEmpty() == true },
                             lastCard = action.card,
                             lastPlayer = action.uid,
                             hands = gameState.hands.toMutableMap().also {
                                 it[action.uid] = it[action.uid]?.minus(action.card) ?: emptyList()
                             },
                             rankings = if (gameState.hands[action.uid]?.isEmpty() == true) gameState.rankings + action.uid else gameState.rankings
-                        ).also { gameStateFile.writeText(Json.encodeToString(it)) })
+                        ) as ServerGameState).also { gameStateFile.writeText(Json.encodeToString(it)) },
+                    )
                 )
             )
         }
@@ -130,12 +134,14 @@ suspend fun FlowCollector<Event>.processInput(action: Action) {
                 Event(
                     game = action.gameId,
                     eventBroadcast = Event.Broadcast.NewGameState(
-                        gameState.copy(
+                        (gameState.copy(
                             turn = gameState.players.subList(
-                                gameState.players.indexOf(action.uid) + 1, gameState.players.size
-                            ).firstOrNull { player -> gameState.hands[player]?.isNotEmpty() == true }
-                                ?: gameState.players.first { player -> gameState.hands[player]?.isNotEmpty() == true })
-                            .also { gameStateFile.writeText(Json.encodeToString(it)) })
+                            gameState.players.indexOf(action.uid) + 1, gameState.players.size
+                        ).firstOrNull { player -> gameState.hands[player]?.isNotEmpty() == true }
+                            ?: gameState.players.first { player -> gameState.hands[player]?.isNotEmpty() == true }) as ServerGameState).also {
+                            gameStateFile.writeText(Json.encodeToString(it))
+                        },
+                    )
                 )
             )
         }

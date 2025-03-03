@@ -1,7 +1,13 @@
 package model
 
-interface ClientGameState {
+import kotlinx.serialization.Serializable
+
+@Serializable
+sealed interface ClientGameState {
+    @Serializable
     data class Waiting(val players: List<String>) : ClientGameState
+
+    @Serializable
     data class Playing(
         val players: List<String>,
         val turn: String,
@@ -11,5 +17,6 @@ interface ClientGameState {
         val rankings: List<String>
     ) : ClientGameState
 
+    @Serializable
     data class Finished(val rankings: List<String>) : ClientGameState
 }
