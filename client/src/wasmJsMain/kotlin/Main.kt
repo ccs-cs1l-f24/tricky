@@ -229,15 +229,15 @@ private fun GameDisplay(
                 }
                 Column {
                     Text("Last card played:")
-                    gameState.lastCard?.let { Text(it.toString()) }
-                    gameState.lastPlayer?.let { Text(it.toString()) }
+                    gameState.lastCard?.let { Text(it.prettyPrint()) }
+                    gameState.lastPlayer?.let { Text(it) }
                 }
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text("Your hand:")
                     gameState.hand.forEach {
                         TextButton(
                             onClick = { onPlayCard(it) }, enabled = gameState.turn == uid
-                        ) { Text(it.toString()) }
+                        ) { Text(it.prettyPrint()) }
                     }
                     OutlinedButton(onClick = onPassTurn, enabled = gameState.turn == uid) { Text("Pass turn") }
                 }
@@ -251,4 +251,16 @@ private fun GameDisplay(
             }
         }
     }
+}
+
+fun PlayingCard.prettyPrint() = when (this) {
+    is PlayingCard.Joker -> "${if (red) "Red" else "Black"} Joker"
+    is PlayingCard.Normal -> "$rank of ${
+        when (suit) {
+            PlayingCard.Suit.DIAMONDS -> "diamonds"
+            PlayingCard.Suit.CLUBS -> "clubs"
+            PlayingCard.Suit.HEARTS -> "hearts"
+            PlayingCard.Suit.SPADES -> "spades"
+        }
+    }"
 }
